@@ -1,0 +1,631 @@
+{
+  "name": "WF2_CV Screening and Sending Emails to Shortlisted Candidates",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "Label_6420096438195188904"
+          ]
+        },
+        "options": {
+          "dataPropertyAttachmentsPrefixName": "CV",
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1808,
+        448
+      ],
+      "id": "b468520b-ea02-4f01-a236-1f3d42db65a4",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "CV0",
+        "name": "={{ $('Gmail Trigger').item.binary.CV0.fileName}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1dTT7GnWZ0P2EN8TPkzh1bezAABj8CEr6",
+          "mode": "list",
+          "cachedResultName": "DE_CV_Email",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1dTT7GnWZ0P2EN8TPkzh1bezAABj8CEr6"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1600,
+        448
+      ],
+      "id": "b06eccf9-0a78-47c8-8446-37f8e9148c8a",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "O4zvcjHz8MdwyFtv",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1392,
+        448
+      ],
+      "id": "1ff99ff7-6a54-4ce4-aa75-9d6bb705ef59",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "O4zvcjHz8MdwyFtv",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        448
+      ],
+      "id": "95c1975c-5314-48f4-8c44-43199473c6ab",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"Name\": {\n      \"type\": \"string\"\n    },\n    \"Email ID\": {\n      \"type\": \"string\",\n      \"format\": \"email\"\n    },\n    \"Phone Number\": {\n      \"type\": \"string\",\n      \"pattern\": \"^(\\\\+92|0)?[0-9]{10}$\"\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -960,
+        96
+      ],
+      "id": "dc25508f-fd8d-4e98-8f84-df5fac8ef0ae",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        256
+      ],
+      "id": "584386d7-c7b0-467f-8b9c-a574ceca85c6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the most accurate and efficient CV summarizer, known for producing concise and informative summaries.\nThis is the CV content:\n{{ $json.text }}\n\nYour Task:\nExtract and summarize the following information from the uploaded CV:\n\nEducational Qualifications\n\nJob History / Work Experience\n\nOverview of Skills & Achievements\n\nDetailed Skill Set\n\nEvaluation Criteria:\nEvaluate the candidate based on the provided job requirements (inserted below).\n\nCompare the candidate’s:\n\nEducation\n\nWork experience\n\nSkills\n\nwith the job description, and assign a score from 1 to 10 based on this scale:\n\nScore\tMatch Level\n1–3\tWeak match\n4–6\tModerate match\n7–8\tStrong match\n9–10\tExcellent match – perfect fit or exceeds expectations\n\nAlso include a brief justification for the assigned score, focusing on how well the candidate meets the job requirements.\n\nInstructions – What to Avoid:\nDo NOT include personal/contact information (email, phone, address, etc.)\n\nDo NOT omit any relevant education, work, or skill-related data\n\nDo NOT use informal language or excessive/unnecessary details. \n\nYou are an experienced HR recruiter and hiring manager specializing in screening candidates for Quality Assurance (QA) and Documentation roles.\n\nYou are given:\n1. The job description, responsibilities, and requirements for the position of QA & Documentation Specialist (below).\n2. The candidate’s CV/resume text and their answers to form questions.\n\nYour task:\n- Evaluate the candidate’s suitability for the role.\n- Consider their experience, skills, and responses to the questions.\n- Check for alignment with the key responsibilities and requirements.\n- Highlight strengths and weaknesses.\n- Provide a recommendation score from 0 to 10.\n- Suggest whether to shortlist, keep in view, or reject.\n\n---\n\n**Job Description Summary:**\nWe are looking for a detail-oriented and proactive QA and Documentation Specialist. Responsibilities include performing QA checks, identifying bugs, creating test plans, maintaining documentation (manuals, SOPs, reports, technical docs), managing version control, collaborating with teams, ensuring compliance, and using tools like MS Office, Google Docs, Notion, Confluence. Requires 1–3 years experience, strong organizational skills, excellent written and verbal communication, and discretion with confidential information. Skills in QA tools, bug tracking, SDLC knowledge, technical writing, and industry standards are a plus.\n\n---\n---\n\n**Output Format:**\n1. **Match Summary (2–3 sentences)**\n2. **Strengths**\n3. **Weaknesses / Concerns**\n4. **Score (0–10)**\n5. **Recommendation**: Shortlist / Reject\nif score is greater than or equal to 5 than shortlist otherwise reject.\n6. **Notes for Interview (if shortlisted)**\n\nBe concise, structured, and professional.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -976,
+        448
+      ],
+      "id": "bf111f34-5e4f-4757-8381-acce9509ae53",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"match_summary\": {\n\t\t\t\"type\": \"string\"\n\t\t},\n\t\t\"strengths\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"weaknesses_or_concerns\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t},\n\t\t\"score\": {\n\t\t\t\"type\": \"integer\"\n\t\t},\n\t\t\"recommendation\": {\n\t\t\t\"type\": \"string\"\n\t\t},\n\t\t\"notes_for_interview\": {\n\t\t\t\"type\": \"array\",\n\t\t\t\"items\": {\n\t\t\t\t\"type\": \"string\"\n\t\t\t}\n\t\t}\n\t}\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -736,
+        688
+      ],
+      "id": "21db6df5-c248-43ea-b599-4370f2661363",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -608,
+        240
+      ],
+      "id": "1bb2062d-082d-48c7-9029-75175c10ca36",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1H9ouPPKN7rsGmZ8A-nbOlBbQSL3pv4QfKroUmIzPJOw",
+          "mode": "list",
+          "cachedResultName": "CV Shortlisting",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H9ouPPKN7rsGmZ8A-nbOlBbQSL3pv4QfKroUmIzPJOw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1H9ouPPKN7rsGmZ8A-nbOlBbQSL3pv4QfKroUmIzPJOw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name ": "={{ $('Information Extractor').item.json.output.Name }}",
+            "Email ID": "={{ $('Information Extractor').item.json.output['Email ID'] }}",
+            "Phone Number": "={{ $('Information Extractor').item.json.output['Phone Number'] }}",
+            "Match Summary": "={{ $('AI Agent').item.json.output.match_summary }}",
+            "Strengths": "={{ $('AI Agent').item.json.output.strengths }}",
+            "Weaknesses or Concerns": "={{ $('AI Agent').item.json.output.weaknesses_or_concerns }}",
+            "Score": "={{ $('AI Agent').item.json.output.score }}",
+            "Recommendation": "={{ $('AI Agent').item.json.output.recommendation }}",
+            "Notes for Interview": "={{ $('AI Agent').item.json.output.notes_for_interview }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name ",
+              "displayName": "Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email ID",
+              "displayName": "Email ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Match Summary",
+              "displayName": "Match Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Strengths",
+              "displayName": "Strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Weaknesses or Concerns",
+              "displayName": "Weaknesses or Concerns",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommendation",
+              "displayName": "Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes for Interview",
+              "displayName": "Notes for Interview",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -400,
+        240
+      ],
+      "id": "af84bac6-2cc3-408b-b75e-7c3699dff4d7",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gLkHdsdJaZqFovZy",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        656
+      ],
+      "id": "e0836b53-f0ca-4e9b-8c73-424e2be5d685",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "214192f9-28e4-4f10-953f-57fa3209d82a",
+              "leftValue": "={{ $json.Recommendation }}",
+              "rightValue": "Shortlist",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        240
+      ],
+      "id": "d426ba0e-a1d3-493d-9ccf-bc6504aa8f32",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        16,
+        512
+      ],
+      "id": "4125937d-8473-421c-8cf4-91ce19243352",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You have to send this email to \n\nCandidate's Email: {{ $json['Email ID'] }} >>>>>>>>>\n\nSubject: Interview Availability for Documentation Expert Position\n\nBody:\n\nDear {{ $json['Name '] }},   \n\nCongratulations! You have been shortlisted for the Documentation Expert position. We were impressed with your application and would like to invite you for an interview on Teams.  \n\nCould you please share your availability over the next week for a virtual interview? Let us know your preferred date and time, and we will do our best to accommodate your schedule. You can choose any time between 8-10 Pm. It will be a half hour interview.  \n\nLooking forward to your response.  \n\nBest regards,   \nHiring Team   \nPaki Gurus \n>>>>>>>>>>>>>>>>>>>.\n>>..don't write emails in paragraphs >>>>>>add spacing>>>also don't create two events on the same date and time. >.use HTML option of Gmail node while sending emails do not use text option.",
+        "options": {
+          "systemMessage": "You are a helpful assistant who send emails>>>>>>>>>>>>>>..don't write emails in paragraphs >>>>>>add spacing>>>also don't create two events on the same date and time. >.use HTML option of Gmail node while sending emails do not use text option."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        64
+      ],
+      "id": "c62e213e-48a6-41cc-a14e-363b07f2373d",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        16,
+        224
+      ],
+      "id": "11924910-6a83-42a3-acf8-5c404513d657",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        256
+      ],
+      "id": "e52ec2ca-7d38-45b8-a2dc-e54dd38ec0e5",
+      "name": "Send a message in Gmail",
+      "webhookId": "9699feba-bcf5-43d2-a30a-87974d4d0544",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1cbe7fd5-5877-4b4b-a889-a7b1fe3c74f3",
+  "meta": {
+    "instanceId": "0d0e726bb72a836cb303f4796657b2601a91b571ec8019afe997ed5408ec7adf"
+  },
+  "id": "d89eH525p2NN1Rgs",
+  "tags": []
+}

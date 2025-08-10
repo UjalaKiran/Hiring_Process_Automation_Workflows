@@ -1,0 +1,167 @@
+{
+  "name": "WF3_Sending Emails to Google Form based Shortlisted Candidates",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1INnBzBb7U86_Qs6yORv0i_kCphvjst_yG2j3a6BBtu4",
+          "mode": "list",
+          "cachedResultName": "Shortlisted_GF",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1INnBzBb7U86_Qs6yORv0i_kCphvjst_yG2j3a6BBtu4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1INnBzBb7U86_Qs6yORv0i_kCphvjst_yG2j3a6BBtu4/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        80,
+        -32
+      ],
+      "id": "77a1ccec-d70d-4221-8b8f-3ac0fb43c2b7",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gLkHdsdJaZqFovZy",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You have to send this email to \n\nCandidate's Email: {{ $json['Teams ID'] }}>>>>>>>>>\n\nSubject: Interview Availability for Documentation Expert Position\n\nBody:\n\nDear {{ $json['Full name'] }},   \n\nCongratulations! You have been shortlisted for the Documentation Expert position. We were impressed with your application and would like to invite you for an interview on Teams.  \n\nCould you please share your availability over the next week for a virtual interview? Let us know your preferred date and time, and we will do our best to accommodate your schedule. You can choose any time between 8-10 Pm. It will be a half hour interview.  \n\nLooking forward to your response.  \n\nBest regards,   \nHiring Team   \nPaki Gurus \n>>>>>>>>>>>>>>>>>>>.\n>>..don't write emails in paragraphs >>>>>>add spacing>>>also don't create two events on the same date and time. >.use HTML option of Gmail node while sending emails do not use text option.",
+        "options": {
+          "systemMessage": "You are a helpful assistant who send emails>>>>>>>>>>>>>>..don't write emails in paragraphs >>>>>>add spacing>>>also don't create two events on the same date and time. >.use HTML option of Gmail node while sending emails do not use text option."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        304,
+        -32
+      ],
+      "id": "440f21b4-449d-4667-873a-b3bfb26690b3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        160,
+        176
+      ],
+      "id": "b33fcd55-a56e-4d7e-a986-8d52640ba573",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        176
+      ],
+      "id": "6188158a-920e-4eee-a773-14757a15ef4f",
+      "name": "Send a message in Gmail",
+      "webhookId": "9e2b9f18-6a74-4072-8c7f-77beffc1eb3d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -32
+      ],
+      "id": "a0c2c998-06b9-43e1-9356-7ff9dd34d0ac",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b49c4426-1212-4d1a-9efb-f0fcbde2687c",
+  "meta": {
+    "instanceId": "0d0e726bb72a836cb303f4796657b2601a91b571ec8019afe997ed5408ec7adf"
+  },
+  "id": "y44Gix22Nhq76RyG",
+  "tags": []
+}

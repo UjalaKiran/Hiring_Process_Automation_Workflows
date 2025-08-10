@@ -1,0 +1,303 @@
+{
+  "name": "WF1_Labeling CV Emails",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1120,
+        96
+      ],
+      "id": "9a0ba007-3cb2-4bc8-b17e-08be06aebb26",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4210802e-a5d8-4373-9493-43a051b513ae",
+              "name": "Email Context",
+              "value": "=Sender's Email Address: \n{{ $json.headers.from }}\n\nEmail Date and Time:\n{{ $json.headers.date }}\n\nEmail Subject:\n{{ $json.headers.subject }}\n\nEmail Body: \n{{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "b22659c4-16fd-4081-8953-39e0498b3499",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        96
+      ],
+      "id": "eb8376c4-86d5-481a-894f-0f4f01eb3164",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Your role is to determine if an email is related to a person applying for Documentation Expert job and sending this email to send the CV / Resume. \n\nCheck for subject line too. It must be related to application of Documentation Expert job.\n\nRespond with two separate JSON objects with the following fields:\n\n- Is CV/Resume Email: which can be either true or false \n\n- Reasoning: Explain your answer.\nexplain why it decided\n\nAlways output the above two fields separately in JSON format do not give a single combine output.\n\nThink carefully about your answer.\nThe email context is as follows:\n{{ $json['Email Context'] }}\n\nAnd if this email contains CV/Resume send upload them to google drive node.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful assistant that can correctly figure out teh nature of emails. You are a JSON generator."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -656,
+        96
+      ],
+      "id": "b000af17-2bf0-4413-b9dc-77e0af21e7bb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"Is CV/Resume Email\": {\n\t\t\t\"type\": \"boolean\"\n\t\t},\n\t\t\"Reasoning\": {\n\t\t\t\"type\": \"string\"\n\t\t}\n\t}\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -400,
+        304
+      ],
+      "id": "354b5f55-3cba-4cc6-910e-2e3c9179edcc",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7f99e538-1984-44a3-957d-0b9d4a082d63",
+              "leftValue": "={{ $json.output['Is CV/Resume Email'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -272,
+        96
+      ],
+      "id": "3b8c416f-115e-4232-9ef9-df7790f7c707",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        448
+      ],
+      "id": "e615c02c-7125-46dd-9c8f-845cae9746ef",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        32,
+        208
+      ],
+      "id": "541394b1-53d9-46b8-bebe-ac6edec2b055",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_6420096438195188904"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        -16
+      ],
+      "id": "06bc43db-34eb-438e-87f9-893dbcbc387d",
+      "name": "Add label to message",
+      "webhookId": "e4ca6a02-dd39-4f36-be84-a3cddcfd6579",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        304
+      ],
+      "id": "f137b922-5c25-4f89-b4de-5e8249ccc434",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Add label to message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ee6c4d48-44b0-4fba-91ca-e9c9222f8d90",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0d0e726bb72a836cb303f4796657b2601a91b571ec8019afe997ed5408ec7adf"
+  },
+  "id": "grHSiJkMs9Hv82Fe",
+  "tags": []
+}

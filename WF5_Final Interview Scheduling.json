@@ -1,0 +1,364 @@
+{
+  "name": "WF5_Final Interview Scheduling",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "Label_1931303831411942100"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -368,
+        256
+      ],
+      "id": "ee89512b-3e3d-40a3-b894-89740c6e554b",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ophgr5R1tLwuna5g",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You have to perform these tasks:\nTask:1:\nThis is the email context of the reply to our email in which we asked about the availability status for interview:\n\n{{ $json['Email Context:'] }}\n\nif this email body is exactly a reply to out email asking for time of interview and it contains the information regarding interview availability exact time and date only then proceed to other tasks if not then leave it.\n\nRead this email context carefully and get the information of exact date and time at which the candidate wants to have an interview. Extract and convert the time in UTC and timezone should be Pakistan standard time. Give start and end time in utc format to google calendar.\n\nTask:2\n\nThis is the exact value you will use when creating the Google Calendar event only if this time is from 8:00 PM to 10:00 PM. Not even at 10:00 PM. The last starting time for interview can be 9:30 PM only.for any day Also the time should be a future value not a past value. This is present date and time:\n\n{{ $now }}\n\nIf it is any other time then ask the candidate to reschedule. There will be no interviews before 8:00 PM and after 10:00PM.\nThe interview is 30 minutes long.\n\nTask:2:\nNow, we need to schedule this interview at that dates and time and create an event in the google calender of the interviewee. But before creating a new event, go to the Google Calendar's get event tool and get all the events that are already there. Now check if there is any event that is on the same\n\n**Date & Time: extracted from reply email**\n\nthen do not create the event at exact same time \n\nTask:4:\n\n**Important:**\nThere should be just one event at the specific half hour. No two interviews should be scedueled at the same time.\n\nAlso make sure that at that time no event is already present in the Google calender if there is any such event then ask the candidate via email to change his avaiabilty time with this email>>\n\nSubject: Request to Reschedule Interview for Documentation Expert Position\n\nBody:\n\nDear [Candidate's Name],\n\nThank you for your response and enthusiasm for the Documentation Expert position. Unfortunately, the proposed interview time on \n\"\"Date & Time: extracted from reply email\"\" is not available for our team.\n\nCould you please provide alternative date and time for an interview. We are happy to accommodate a time that works best for you.\n\nLooking forward to your reply.\n\nRegards,\nHiring Team\nPaki Gurus\n\nIf you are sending the reschedule request email to candidate then no need to create any event and also no need to confirm candidate or interviewer if the event is not being created. Just send reschedule request email to candidate.\n\nIf you are not creating an event in the google calender due to presence of another event then dont send email to hiring manager just inform candidate to change his interview time.\n\n>>>>>>\n\n\nTask:3:\nIf there is no event conflict then create the event and also send an email of this event creation to the interviwee that event has been created you have to interview that candidate at this time with this person.The email id for interviewee is:\n\nInterviewee's Email id: ujalakiran13@gmail.com\n\nSubject: Interview Invitation Added to Google Calendar\n\nBody:\n\nDear Interviwer,\n\nYour interview has been scheduled and an event has been added to your Google Calendar.\n\nDate & Time: extracted from reply email\n\nPlease check your Google Calendar for the invite and let us know if you face any issues accessing it.\n\n\nTask:5:\n\nExtract the Candidate's Name from email body.\n\nAlso send an email to the person who told his availabilty to confirm that his interview is scheduled.\n\nand the email of the candidate is:\nCandidate's Email id: {{ $('Gmail Trigger').item.json.from.value[0].address }}\n\nSubject: Interview Confirmation\n\nBody:\n\nDear [Candidate's Name],\n\nThis is to confirm your interview for the Documentation Expert role.\n\nDate & Time: extracted from reply email\n\nIf you have any questions or need to reschedule, feel free to reach out.\n\nLooking forward to speaking with you!\n\nRegards,\nHiring Team\nPaki Gurus\n\n\nTask:6:\n>>>>>>>>>>>>>>\nDelete the created event one day after :\nDate & Time: extracted from reply email\n  >>>>>like if you created an event for  10th August 2025 then delete it on 11th August 2025.<<<<<<<<<\n\n>>>>>..don't write emails in paragraphs >>>>>>add spacing>>>also don't create two events on the same date and time. >.use HTML option of Gmail node while sending emails do not use text option.\n\n",
+        "options": {
+          "systemMessage": "You are an Event Creator, Event Getter,Event Deleter and Email sending Agent.\n*Important:* Do not create events in past only create for future or present i.e. the time that will come not has passed yet.\n\nAlso do not create events before 8:00 PM and after 10:00 PM.\nTools:\n1. Google Calendar: use this to create, get and delete an event. \n2. Gmail Tool: use this to send emails\ntoday's date is: {{ $now }} \n\n>>>>..don't write emails in paragraphs >>>>>>add spacing>>>also don't create two events on the same date and time. >.use HTML option of Gmail node while sending emails do not use text option.>>>>>>>>>>>>>>>>>..\nNever ever send confirmation emails or create event after the request of rescheduling of any specific time.>>>>>>>>>>>>>\nAlso always make sure by getting all events from calendar that no two events are scheduled at same time.\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        48,
+        256
+      ],
+      "id": "3bf9a276-b6fe-4883-91e9-f8cbedbb9664",
+      "name": "AI Agent",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', `Write in html format.`, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        576,
+        464
+      ],
+      "id": "34c006e3-4eb2-4dd0-84d9-9f01f974dec6",
+      "name": "Send a message in Gmail",
+      "webhookId": "01a55c89-91c8-4745-aec5-4635998d91f0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "ujalakiran13@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ujalakiran13@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        464
+      ],
+      "id": "19bbffda-733a-405f-9b22-e15d14823535",
+      "name": "Create an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "IhAjnSdJA9bO0ICJ",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "99f16569-0d09-41ec-9d69-f8c35e1adb99",
+              "name": "=Email Context:",
+              "value": "=Sender's Email Address: \n{{ $json.headers.from }}\n\nEmail Date and Time:\n{{ $json.headers.date }}\n\nEmail Subject:\n{{ $json.headers.subject }}\n\nEmail Body: \n{{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        256
+      ],
+      "id": "eaaee708-d600-4c09-879d-98c445a65f6f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "ujalakiran13@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ujalakiran13@gmail.com"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        464
+      ],
+      "id": "1dd2121a-d621-4c19-9795-d4af12aac295",
+      "name": "Get many events in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "IhAjnSdJA9bO0ICJ",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        464
+      ],
+      "id": "62c5ac52-0678-49be-8c40-6e65bd30bda6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "ujalakiran13@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ujalakiran13@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        480
+      ],
+      "id": "cecdd6a6-fef8-4c44-affd-f786459c96fe",
+      "name": "Delete an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "IhAjnSdJA9bO0ICJ",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Gmail Trigger": [
+      {
+        "json": {
+          "id": "1988f570a4469aea",
+          "threadId": "1988f564372b7623",
+          "labelIds": [
+            "Label_1931303831411942100",
+            "IMPORTANT",
+            "CATEGORY_PERSONAL",
+            "INBOX"
+          ],
+          "sizeEstimate": 7284,
+          "headers": {
+            "delivered-to": "Delivered-To: ujalakiran13@gmail.com",
+            "received": "Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])\r\n        by mx.google.com with SMTPS id 98e67ed59e1d1-320fb9bb503sor15916208a91.5.2025.08.09.07.58.22\r\n        for <ujalakiran13@gmail.com>\r\n        (Google Transport Security);\r\n        Sat, 09 Aug 2025 07:58:22 -0700 (PDT)",
+            "x-received": "X-Received: by 2002:a17:90b:544c:b0:312:1d2d:18e2 with SMTP id\r\n 98e67ed59e1d1-32183d3e98cmr9284339a91.20.1754751502129; Sat, 09 Aug 2025\r\n 07:58:22 -0700 (PDT)",
+            "arc-seal": "ARC-Seal: i=1; a=rsa-sha256; t=1754751502; cv=none;\r\n        d=google.com; s=arc-20240605;\r\n        b=Hfneaa+1P58gMp3Gj34aZc9dH38UWxCMxhVD8bHIkZcp0S1FyVuPeRSynPJjaDWHeX\r\n         qesmRG3Pimo9czK3yJ0n+F/G1XoKKPZNmApIJGvAWVhouhDLUfqkQzN7nyZqpdCQr9jS\r\n         tknNejS0AEth3C3MXW8XV2oONQU8uZO0aCTmM/OfqaivAUv7ly56936Ho/BTPCmS1MRS\r\n         bknN8fZeYgdGFJ82AXz/esuBw2ahH8pou4O1U4BzMHmKqCMEXGf0sor3QNYQEwP3hKLy\r\n         RjcNg0PVtYNtIf7AOEpiXcjbMIxeSDnBs+834Q/+4q7gD/FSOGy5vSfRWqipEq0MpsC9\r\n         PXGw==",
+            "arc-message-signature": "ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;\r\n        h=to:subject:message-id:date:from:in-reply-to:references:mime-version\r\n         :dkim-signature;\r\n        bh=hz6xHUyUjdHf3mhXvfrRBSR8UQhmLYhvDAknerDEZ64=;\r\n        fh=hxqAJ4X3DtZyXW+8n9pMEQUfs9U1nVARbI7SME5mZ0I=;\r\n        b=TZ6Gzr/qZgKNTovrYiBmMJQe+vHvhBrMohZQa5z8L8R0r0QsxjZzC3pSkq6R45FcOg\r\n         j9+2AdNK/fSji/aK019M/O6b4UvBmdkRpA/P5mTb5KD+64Y/w6anBqI+eLzAhq9/TVJW\r\n         /Nj+ugf4uUkZLKsu5JzmSXHBLQdlDyxCMcxoTlIhHvkHAuadF920zuw0zsoWz7wEttE8\r\n         J3n/LZUMj5MtRk/ROb7GDeeFsGzPQtlDMaixJi1HpEOQTyImDjkskWQGbAoEDxfPMbbq\r\n         F5be+4RpeT75QADL/iFvFC49SUICRfpYv4xQ9JZShn6OIgUbft2PCkNm8Fni1KM3okRY\r\n         qakw==;\r\n        dara=google.com",
+            "arc-authentication-results": "ARC-Authentication-Results: i=1; mx.google.com;\r\n       dkim=pass header.i=@gmail.com header.s=20230601 header.b=T9caJZVe;\r\n       spf=pass (google.com: domain of kiranujala204@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=kiranujala204@gmail.com;\r\n       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;\r\n       dara=pass header.i=@gmail.com",
+            "return-path": "Return-Path: <kiranujala204@gmail.com>",
+            "received-spf": "Received-SPF: pass (google.com: domain of kiranujala204@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;",
+            "authentication-results": "Authentication-Results: mx.google.com;\r\n       dkim=pass header.i=@gmail.com header.s=20230601 header.b=T9caJZVe;\r\n       spf=pass (google.com: domain of kiranujala204@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=kiranujala204@gmail.com;\r\n       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;\r\n       dara=pass header.i=@gmail.com",
+            "dkim-signature": "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n        d=gmail.com; s=20230601; t=1754751502; x=1755356302; dara=google.com;\r\n        h=to:subject:message-id:date:from:in-reply-to:references:mime-version\r\n         :from:to:cc:subject:date:message-id:reply-to;\r\n        bh=hz6xHUyUjdHf3mhXvfrRBSR8UQhmLYhvDAknerDEZ64=;\r\n        b=T9caJZVet1nPWD2oEM5eI4ELFi2lk2N6xmwjWNdiovF33GhQtzQC383QfOqYk71TbI\r\n         wAD5V4XIJMjj/UV6WsDHVmz69wI/AKd6gk9UH2ghaz3TSmDdt97lB00YIh3FcpJhJwqI\r\n         ST4fnAxWxdGseQfVjrMCzZly5vfq5I+GQP/gWQq04Y/R64AJGhNIKWnhSLJJDiWxPOkI\r\n         ADrFjTgpnRvBy4G8z9DwW28UNkie5zA0HDTFUPLoUwVi34rNkCzYBgdLEZzbhd9NiAI5\r\n         Eg+V3JSaXbwiXdRfZK6YSBgB9gK6fgaB8qBN43ocGLap9H6qsF478jwSiDHMhbk+LlHc\r\n         XaLw==",
+            "x-google-dkim-signature": "X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n        d=1e100.net; s=20230601; t=1754751502; x=1755356302;\r\n        h=to:subject:message-id:date:from:in-reply-to:references:mime-version\r\n         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;\r\n        bh=hz6xHUyUjdHf3mhXvfrRBSR8UQhmLYhvDAknerDEZ64=;\r\n        b=lzXUQpL+KMA5BpsR+76k+G0X7PiyEyp+BEjGj+ei+OxCE8vXWp18o7gL1nPbdnUkhw\r\n         NPkI++BKmKRkfF/6airAWpTD687SX5Jd4hHbw15EoDM5Yk3x4cMdFRUJFY9waFjuXEbK\r\n         ttXCkj+JvW2n1EG5TnN0uDWqcDx/Lh2uKVIMfMJaz9J+IoXYSXvJzxkXOblpnQlIl84a\r\n         fDV7P+pAMX4YV338RpHGVMfw2WRAr850xIGrZB2gfwX8j+dL/rhKiuO3frJlboNr/C60\r\n         x1vUXshSNPnmS4a9Dxr9LMdZ/ZNp6O7Vf006yJg2m6ESoqCwwGxa67ozHEIrKVbCOxEr\r\n         ANGw==",
+            "x-gm-message-state": "X-Gm-Message-State: AOJu0YymU9rVOA8idw6LtXQ2/3NXM5NUmTLGd3BIV/8UIX/fQbzhFLdg\r\n\tY6p6p76T6AOXt6hjEWIq7sATXA0St6BJpQ3srlKpo2QATXR0G3M8TgaV2vHS+lVKOwE4dpRWGT4\r\n\tj8M77ssZPwYKZFvoCFXUpQ8rrEc+IsEpd6Q==",
+            "x-gm-gg": "X-Gm-Gg: ASbGnct149e8mNXvI4xx6SsnVJaucpBcC67VkMqxINKBY65Ia/kTxLoyJuWqP4gC6JR\r\n\tsqOIc7IgI8Q2Lgx04bwGUorC4zI6jfzJbKXslrQ4hYTimXNOPSjm4l5Sem7e6OsSzlq4/+6abmB\r\n\tjsohA/qogW3ZwJUHWUCFYP3QM4SevHaDyIGgVDU1HADHGaWenYYfEg6Zc9I9fjzjgjQIi8xlYFT\r\n\tfOZFEV711oqwSKVVqZ3",
+            "x-google-smtp-source": "X-Google-Smtp-Source: AGHT+IH1/LlGqWe4njpGxx5zkh7Pk+RNQnoeGafU7h8NajYjtZtdHE/PYGSYjCscgTJC+Obup9leMwYX51rRLZBSsQw=",
+            "mime-version": "MIME-Version: 1.0",
+            "references": "References: <CAMfkmnVMnb4qO8NK-3ufrSB99JOB-N1SanQoeTD049Py2hgtTw@mail.gmail.com>",
+            "in-reply-to": "In-Reply-To: <CAMfkmnVMnb4qO8NK-3ufrSB99JOB-N1SanQoeTD049Py2hgtTw@mail.gmail.com>",
+            "from": "From: Ujala Kiran <kiranujala204@gmail.com>",
+            "date": "Date: Sat, 9 Aug 2025 19:58:09 +0500",
+            "x-gm-features": "X-Gm-Features: Ac12FXyX2ZtLnV8v2OEp_Ip2gyHJ6GMlrPJJ_nlMG3Nf0xMib5jjfnDLdb440Kk",
+            "message-id": "Message-ID: <CADc1TZKOQuZ9EF2d_3T=dXzu7t3vCauDdn4KPUuh0m_Y8nC2JA@mail.gmail.com>",
+            "subject": "Subject: Re: Request to Reschedule Interview for Documentation Expert Position",
+            "to": "To: ujalakiran13@gmail.com",
+            "content-type": "Content-Type: multipart/alternative; boundary=\"000000000000f41f13063befebd6\""
+          },
+          "html": "<div dir=\"ltr\"><div>Okay then 9:00PM on 9th August 2025</div><br><div class=\"gmail_quote gmail_quote_container\"><div dir=\"ltr\" class=\"gmail_attr\">On Sat, 9 Aug 2025 at 19:57, &lt;<a href=\"mailto:ujalakiran13@gmail.com\">ujalakiran13@gmail.com</a>&gt; wrote:<br></div><blockquote class=\"gmail_quote\" style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">Dear Ujala Kiran,\n\nThank you for your response and enthusiasm for the Documentation Expert position. Unfortunately, the proposed interview time on \n9th August 2025 at 10:00 PM is not available for our team.\n\nCould you please provide alternative date and time for an interview. We are happy to accommodate a time that works best for you.\n\nLooking forward to your reply.\n\nRegards,\nHiring Team\nPaki Gurus\n</blockquote></div></div>\n",
+          "text": "Okay then 9:00PM on 9th August 2025\n\nOn Sat, 9 Aug 2025 at 19:57, <ujalakiran13@gmail.com> wrote:\n\n> Dear Ujala Kiran, Thank you for your response and enthusiasm for the\n> Documentation Expert position. Unfortunately, the proposed interview time\n> on 9th August 2025 at 10:00 PM is not available for our team. Could you\n> please provide alternative date and time for an interview. We are happy to\n> accommodate a time that works best for you. Looking forward to your reply.\n> Regards, Hiring Team Paki Gurus\n",
+          "textAsHtml": "<p>Okay then 9:00PM on 9th August 2025</p><p>On Sat, 9 Aug 2025 at 19:57, &lt;<a href=\"mailto:ujalakiran13@gmail.com\">ujalakiran13@gmail.com</a>&gt; wrote:</p><p>&gt; Dear Ujala Kiran, Thank you for your response and enthusiasm for the<br/>&gt; Documentation Expert position. Unfortunately, the proposed interview time<br/>&gt; on 9th August 2025 at 10:00 PM is not available for our team. Could you<br/>&gt; please provide alternative date and time for an interview. We are happy to<br/>&gt; accommodate a time that works best for you. Looking forward to your reply.<br/>&gt; Regards, Hiring Team Paki Gurus</p>",
+          "subject": "Re: Request to Reschedule Interview for Documentation Expert Position",
+          "references": "<CAMfkmnVMnb4qO8NK-3ufrSB99JOB-N1SanQoeTD049Py2hgtTw@mail.gmail.com>",
+          "date": "2025-08-09T14:58:09.000Z",
+          "to": {
+            "value": [
+              {
+                "address": "ujalakiran13@gmail.com",
+                "name": ""
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><a href=\"mailto:ujalakiran13@gmail.com\" class=\"mp_address_email\">ujalakiran13@gmail.com</a></span>",
+            "text": "ujalakiran13@gmail.com"
+          },
+          "from": {
+            "value": [
+              {
+                "address": "kiranujala204@gmail.com",
+                "name": "Ujala Kiran"
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><span class=\"mp_address_name\">Ujala Kiran</span> &lt;<a href=\"mailto:kiranujala204@gmail.com\" class=\"mp_address_email\">kiranujala204@gmail.com</a>&gt;</span>",
+            "text": "\"Ujala Kiran\" <kiranujala204@gmail.com>"
+          },
+          "messageId": "<CADc1TZKOQuZ9EF2d_3T=dXzu7t3vCauDdn4KPUuh0m_Y8nC2JA@mail.gmail.com>",
+          "inReplyTo": "<CAMfkmnVMnb4qO8NK-3ufrSB99JOB-N1SanQoeTD049Py2hgtTw@mail.gmail.com>"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4fd79893-1985-4cce-a86a-328a41134597",
+  "meta": {
+    "instanceId": "0d0e726bb72a836cb303f4796657b2601a91b571ec8019afe997ed5408ec7adf"
+  },
+  "id": "chOto2aynfFAJWCY",
+  "tags": []
+}

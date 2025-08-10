@@ -1,0 +1,300 @@
+{
+  "name": "WF4_ Labeling Reply Emails",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        304
+      ],
+      "id": "1ffb6c2d-6d7c-4ac0-9817-f40e0fdbb674",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4210802e-a5d8-4373-9493-43a051b513ae",
+              "name": "Email Context",
+              "value": "=Sender's Email Address: \n{{ $json.headers.from }}\n\nEmail Date and Time:\n{{ $json.headers.date }}\n\nEmail Subject:\n{{ $json.headers.subject }}\n\nEmail Body: \n{{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "b22659c4-16fd-4081-8953-39e0498b3499",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -176,
+        304
+      ],
+      "id": "ada3ab25-86c7-421d-b30e-969eb0b74d6a",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You have to perform these tasks:\n\nYou need to determine if an incoming email message is a reply to our email in which we asked about the availability status of a candidate for interview of Documentation Expert position:\n\nRead it carefully.\n\nIf this email body is exactly a reply to our email in which we asked for time and date the candidate will be avaiable for a teams of interview and it contains the information regarding interview availability exact time and date only then:\n\nCheck for subject line too. It must be related to reply or related to availability for teams interview for documentation Expert position.\n\nRespond with two separate JSON objects with the following fields:\n\n- Is Reply Email: which can be either true or false \n\n- Reasoning: Explain your answer.\nexplain why it decided\n\nAlways output the above two fields separately in JSON format do not give a single combine output.\n\nThink carefully about your answer.\n\nThe email context is as follows:\n{{ $json['Email Context'] }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful assistant that can correctly figure out teh nature of emails. You are a JSON generator."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        304
+      ],
+      "id": "7d24f65d-477b-44e7-82d2-3f6822a45533",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"Is Reply Email\": {\n\t\t\t\"type\": \"boolean\"\n\t\t},\n\t\t\"Reasoning\": {\n\t\t\t\"type\": \"string\"\n\t\t}\n\t}\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        512
+      ],
+      "id": "2aa75c4d-7fc7-493b-b49f-191665c40349",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7f99e538-1984-44a3-957d-0b9d4a082d63",
+              "leftValue": "={{ $json.output['Is Reply Email'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        304
+      ],
+      "id": "2a35199c-39e2-4b17-a5eb-26ef51582b57",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        336,
+        672
+      ],
+      "id": "aba1348f-27b5-48c1-ada2-40309bc775ce",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        752,
+        416
+      ],
+      "id": "2fe000cf-2cf8-4465-98d8-9c5ae7ac45ac",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_1931303831411942100"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        208
+      ],
+      "id": "90819a4d-a8a4-4b52-a2ae-2b23a6ee89dd",
+      "name": "Add label to message",
+      "webhookId": "f558f79e-116d-4989-833a-d0d43f39f5b6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "X0JPU8RWjD4os8UI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        512
+      ],
+      "id": "7a05639d-f3f3-45dd-8bb6-fe28724e43d4",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BJqD1WcKzNpyWHnd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Add label to message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "378ac744-0cdc-41cf-85d7-2e4f2f14bdeb",
+  "meta": {
+    "instanceId": "0d0e726bb72a836cb303f4796657b2601a91b571ec8019afe997ed5408ec7adf"
+  },
+  "id": "bdxF6AkHJZY78ei0",
+  "tags": []
+}
